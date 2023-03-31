@@ -10,7 +10,7 @@ jobs:
     runs-on: self-hosted
     strategy:
       matrix:
-        dotnet-version: ['7.x.x']
+        dotnet-version: ['3.1', '5.0', '6.0']
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -21,4 +21,4 @@ jobs:
     - name: Build
       run: dotnet build -c Release
     - name: Publish
-      run: dotnet nuget push ./bin/Release/*.nupkg --source http://10.0.0.225:8081/repository/nuget-hosted/index.json
+      run: dotnet nuget push ./bin/Release/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source http://10.0.0.225:8081/repository/nuget-hosted/index.json
