@@ -3,7 +3,7 @@ name: Deploy NuGet Package
 on:
   push:
     branches:
-      - main
+      - master
 
 jobs:
   deploy:
