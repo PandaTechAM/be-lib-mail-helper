@@ -19,6 +19,6 @@ jobs:
       with:
         dotnet-version: ${{ matrix.dotnet-version }}
     - name: Build
-      run: dotnet build -c Release
+      run: dotnet pack
     - name: Publish
       run: dotnet nuget push ./bin/Release/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source http://10.0.0.225:8081/repository/nuget-hosted/index.json
