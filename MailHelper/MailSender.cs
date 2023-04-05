@@ -3,7 +3,7 @@ using System.Net.Mail;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
-namespace MailHelper;
+namespace PandaTech.MailHelper;
 
 public class MailSender : BackgroundService
 {
@@ -76,30 +76,33 @@ public class MailSender : BackgroundService
                 count--;
                 lock (_lock)
                 {
-                    var mewMessage = _messageQueue.Dequeue();
-                    var message = new MailMessage(_mailServerConfig.SmtpFrom, mewMessage.To)
+                    var messageToSend = _messageQueue.Dequeue();
+                    var mailMessage = new MailMessage(_mailServerConfig.SmtpFrom, messageToSend.To)
                     {
-                        Subject = mewMessage.Subject,
-                        Body = mewMessage.Body,
+                        Subject = messageToSend.Subject,
+                        Body = messageToSend.Body,
                     };
-                    foreach (var mailAttachment in mewMessage.Attachments.Select(attachment =>
+                    foreach (var mailAttachment in messageToSend.Attachments.Select(attachment =>
                                  new Attachment(new MemoryStream(attachment.Data), attachment.Name)))
                     {
-                        message.Attachments.Add(mailAttachment);
+                        mailMessage.Attachments.Add(mailAttachment);
                     }
 
                     try
                     {
-                        smtpClient.Send(message);
-                        _logger.LogInformation("Mail sent");
+                        smtpClient.Send(mailMessage);
+                        _logger.LogInformation("Mail {subject} sent to {to}",messageToSend.Subject, messageToSend.To);
                     }
                     catch (Exception e)
                     {
                         _logger.LogError(e, "Error sending mail, re-adding to queue");
-                        _messageQueue.Enqueue(mewMessage);
+                        _messageQueue.Enqueue(messageToSend);
                     } 
                 }
             }
+            
+            _logger.LogInformation("Mail queue count: {count}", count);
+
         }
     }
 }

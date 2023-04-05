@@ -1,4 +1,4 @@
-﻿namespace MailHelper;
+﻿namespace PandaTech.MailHelper;
 
 public class MailServerConfig
 {

@@ -6,6 +6,7 @@
         <Nullable>enable</Nullable>
         <Version>1.0.4</Version>
         <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+        <PackageId>PandaTech.MailHelper</PackageId>
     </PropertyGroup>
 
     <ItemGroup>
