@@ -24,4 +24,4 @@ jobs:
       run: dotnet pack --output nupkgs
       
     - name: Publish
-      run: dotnet nuget push ./nupkgs/*.nupkg --api-key ${{ secrets.NUGET_API_KEY }} --source http://10.0.0.225:8081/repository/nuget-hosted/index.json
+      run: dotnet nuget push ./nupkgs/*.nupkg -k ${{ secrets.NUGET_API_KEY }} 
