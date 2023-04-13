@@ -15,6 +15,7 @@ public class MailSender : BackgroundService
 
         public List<AttachmentData> Attachments { get; set; } = new();
     }
+
     public struct AttachmentData
     {
         public string Name { get; set; }
@@ -62,7 +63,7 @@ public class MailSender : BackgroundService
             }
 
             if (count == 0) continue;
-            
+
             _logger.LogInformation("Mail queue count: {count}", count);
 
             var smtpClient = new SmtpClient(_mailServerConfig.SmtpServer, _mailServerConfig.SmtpPort)
@@ -74,35 +75,39 @@ public class MailSender : BackgroundService
             while (count > 0)
             {
                 count--;
+                Message messageToSend;
                 lock (_lock)
                 {
-                    var messageToSend = _messageQueue.Dequeue();
-                    var mailMessage = new MailMessage(_mailServerConfig.SmtpFrom, messageToSend.To)
-                    {
-                        Subject = messageToSend.Subject,
-                        Body = messageToSend.Body,
-                    };
-                    foreach (var mailAttachment in messageToSend.Attachments.Select(attachment =>
-                                 new Attachment(new MemoryStream(attachment.Data), attachment.Name)))
-                    {
-                        mailMessage.Attachments.Add(mailAttachment);
-                    }
+                    messageToSend = _messageQueue.Dequeue();
+                }
 
-                    try
+                var mailMessage = new MailMessage(_mailServerConfig.SmtpFrom, messageToSend.To)
+                {
+                    Subject = messageToSend.Subject,
+                    Body = messageToSend.Body,
+                };
+                foreach (var mailAttachment in messageToSend.Attachments.Select(attachment =>
+                             new Attachment(new MemoryStream(attachment.Data), attachment.Name)))
+                {
+                    mailMessage.Attachments.Add(mailAttachment);
+                }
+
+                try
+                {
+                    smtpClient.Send(mailMessage);
+                    _logger.LogInformation("Mail {subject} sent to {to}", messageToSend.Subject, messageToSend.To);
+                }
+                catch (Exception e)
+                {
+                    _logger.LogError(e, "Error sending mail, re-adding to queue");
+                    lock (_lock)
                     {
-                        smtpClient.Send(mailMessage);
-                        _logger.LogInformation("Mail {subject} sent to {to}",messageToSend.Subject, messageToSend.To);
-                    }
-                    catch (Exception e)
-                    {
-                        _logger.LogError(e, "Error sending mail, re-adding to queue");
                         _messageQueue.Enqueue(messageToSend);
-                    } 
+                    }
                 }
             }
-            
-            _logger.LogInformation("Mail queue count: {count}", count);
 
+            _logger.LogInformation("Mail queue count: {count}", count);
         }
     }
 }
