@@ -7,7 +7,7 @@ namespace PandaTech.MailHelper;
 
 public class MailSender : BackgroundService
 {
-    private class Message
+    public class Message
     {
         public string To { get; set; } = null!;
         public string Subject { get; set; } = null!;
@@ -52,6 +52,14 @@ public class MailSender : BackgroundService
         }
     }
 
+    public List<Message> GetMessages()
+    {
+        lock (_lock)
+        {
+            return _messageQueue.ToList();
+        }
+    }
+    
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (await _timer.WaitForNextTickAsync(stoppingToken))
