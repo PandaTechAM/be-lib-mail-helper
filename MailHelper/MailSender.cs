@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using System.Net.Mail;
+using System.Text.Json.Serialization;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 
@@ -13,6 +14,9 @@ public class MailSender : BackgroundService
         public string Subject { get; set; } = null!;
         public string Body { get; set; } = null!;
 
+        [JsonIgnore]
+        public MailServerConfig? MailServerConfig { get; set; } = null!;
+
         public List<AttachmentData> Attachments { get; set; } = new();
     }
 
@@ -22,13 +26,13 @@ public class MailSender : BackgroundService
         public byte[] Data { get; set; }
     }
 
-    private readonly MailServerConfig _mailServerConfig;
+    private readonly MailServerConfig? _mailServerConfig;
     private readonly Queue<Message> _messageQueue = new();
     private readonly object _lock = new();
     private readonly PeriodicTimer _timer;
     private readonly ILogger<MailSender> _logger;
 
-    public MailSender(MailServerConfig mailServerConfig, ILogger<MailSender> logger)
+    public MailSender(MailServerConfig? mailServerConfig, ILogger<MailSender> logger)
     {
         _mailServerConfig = mailServerConfig;
         _logger = logger;
@@ -59,7 +63,7 @@ public class MailSender : BackgroundService
             return _messageQueue.ToList();
         }
     }
-    
+
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         while (await _timer.WaitForNextTickAsync(stoppingToken))
@@ -74,11 +78,6 @@ public class MailSender : BackgroundService
 
             _logger.LogInformation("Mail queue count: {count}", count);
 
-            var smtpClient = new SmtpClient(_mailServerConfig.SmtpServer, _mailServerConfig.SmtpPort)
-            {
-                Credentials = new NetworkCredential(_mailServerConfig.SmtpUser, _mailServerConfig.SmtpPassword),
-                EnableSsl = true
-            };
 
             while (count > 0)
             {
@@ -89,7 +88,19 @@ public class MailSender : BackgroundService
                     messageToSend = _messageQueue.Dequeue();
                 }
 
-                var mailMessage = new MailMessage(_mailServerConfig.SmtpFrom, messageToSend.To)
+                var config = (messageToSend.MailServerConfig ?? _mailServerConfig);
+
+                if (config is null)
+                    continue;
+
+                var smtpClient = new SmtpClient(config.SmtpServer, config.SmtpPort)
+                {
+                    Credentials = new NetworkCredential(config.SmtpUser, config.SmtpPassword),
+                    EnableSsl = true
+                };
+
+                var mailMessage = new MailMessage(config.SmtpFrom,
+                    messageToSend.To)
                 {
                     Subject = messageToSend.Subject,
                     Body = messageToSend.Body,
