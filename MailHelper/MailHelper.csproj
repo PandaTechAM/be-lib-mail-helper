@@ -27,6 +27,10 @@
     </ItemGroup>
 
     <ItemGroup>
+		<None Include="..\.gitignore">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
       <None Include="..\pandatech.png">
         <Pack>True</Pack>
         <PackagePath>\</PackagePath>
