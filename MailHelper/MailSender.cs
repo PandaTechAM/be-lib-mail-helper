@@ -32,6 +32,13 @@ public class MailSender : BackgroundService
     private readonly PeriodicTimer _timer;
     private readonly ILogger<MailSender> _logger;
 
+    public MailSender(ILogger<MailSender> logger)
+    {
+        _logger = logger;
+        var time = Environment.GetEnvironmentVariable("MAIL_SENDER_TIMER") ?? "5";
+        _timer = new PeriodicTimer(TimeSpan.FromSeconds(int.Parse(time)));
+    }
+
     public MailSender(MailServerConfig? mailServerConfig, ILogger<MailSender> logger)
     {
         _mailServerConfig = mailServerConfig;
